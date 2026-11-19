@@ -1,16 +1,66 @@
-# React + Vite
+# فروشگاه اینترنتی کوروش کبیر
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## پیش‌نیازها
 
-Currently, two official plugins are available:
+- Node.js نسخه ۲۰ یا جدیدتر و npm
+- تنظیم `SESSION_SECRET` قوی و تصادفی در `server/.env` (حداقل ۳۲ بایت تصادفی). این مقدار را منتشر یا در مخزن ثبت نکنید.
+- در استقرار cross-origin، تنظیم `CLIENT_URL` روی مبدأ دقیق وب‌سایت. برای توسعه محلی، Vite مسیرهای `/api` و `/uploads` را به پورت ۵۰۰۰ می‌فرستد.
+- `GEMINI_API_KEY` اختیاری است؛ فقط برای دستیار هوشمند لازم است. پرداخت به تنظیمات معتبر درگاه واقعی نیاز دارد.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## آماده‌سازی پایگاه داده
 
-## React Compiler
+پیش از اجرای مهاجرت روی دیتابیس موجود، از `server/database/koroush-shop.sqlite` نسخه پشتیبان معتبر تهیه کنید. مهاجرت افزایشی و تکرارپذیر را از ریشه پروژه اجرا کنید:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```powershell
+npm.cmd --prefix server run db:prepare
+```
 
-## Expanding the ESLint configuration
+آماده‌سازی جدول‌های کاربران، محصولات، قیمت‌گذاری و سفارش‌ها را کنترل می‌کند. محصولات، کاربران و قیمت‌های قدیمی حذف نمی‌شوند. محصولات فاقد قیمت پایه، حتی اگر قیمت قدیمی در دیتابیس داشته باشند، به مشتری به‌عنوان قیمت قطعی ارائه نمی‌شوند؛ مدیر باید قیمت پایه را از منبع تأمین‌کننده ثبت کند.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+اگر هنوز مدیر اولیه ایجاد نشده است، یک بار دستور زیر را اجرا کنید و اطلاعات را فقط در ورودی تعاملی وارد کنید:
+
+```powershell
+node server/createAdmin.js
+```
+
+رمز در ترمینال نمایش داده نمی‌شود. اگر مدیر موجود است، حساب تازه‌ای نسازید.
+
+## اجرای محلی
+
+دو ترمینال باز کنید:
+
+```powershell
+npm.cmd run dev
+```
+
+```powershell
+npm.cmd --prefix server run dev
+```
+
+وب‌سایت در `http://localhost:5173` و API در `http://localhost:5000` در دسترس است.
+
+## بررسی و ساخت
+
+```powershell
+npm.cmd run lint
+npm.cmd run build
+npm.cmd --prefix server test
+```
+
+## محصولات، قیمت و خرید
+
+مدیر باید قیمت پایه هر محصول را از تأمین‌کننده به **ریال** وارد کند. قیمت فروش در سمت سرور از فرمول `(قیمت پایه × ۱۱۹) ÷ ۱۰۰` محاسبه و به ریال صحیح گرد می‌شود. بدون قیمت پایه، قیمت قطعی نمایش داده نمی‌شود و سفارش آن محصول پذیرفته نخواهد شد. تصاویر واقعی محصول را از پنل مدیر بارگذاری کنید؛ تصویر نمونه جایگزین تصویر واقعی نیست.
+
+ثبت سفارش نیازمند حساب مشتری و نشانی معتبر است. سرور قیمت و موجودی را مجدداً می‌خواند، موجودی را در تراکنش رزرو می‌کند و سفارش/اقلام و تغییر وضعیت را نگه می‌دارد. درخواست تکراری با همان کلید و همان محتوا، سفارش دوم ایجاد نمی‌کند. هزینه ارسال در این نسخه محاسبه نمی‌شود و باید جداگانه با مشتری هماهنگ شود.
+
+## پرداخت
+
+درگاه پیش‌فرض عمداً تنظیم‌نشده است. `/api/payments/orders/:id/payment` تا فراهم‌شدن adapter در `server/payments/gateway.js` و تنظیمات معتبر، پاسخ «درگاه پرداخت تنظیم نشده است» می‌دهد. callback فقط وقتی پرداخت را ثبت می‌کند که adapter سمت سرور، پاسخ معتبر و امضاشده درگاه را بررسی کند و مبلغ و ارز با سفارش تطبیق داشته باشند. پرداخت آزمایشی یا وضعیت ارسالی مرورگر هرگز پرداخت موفق تلقی نمی‌شود.
+
+## فایل‌های پایدار داده
+
+- دیتابیس فروشگاه: `server/database/koroush-shop.sqlite`
+- دیتابیس نشست‌ها: `server/database/sessions.sqlite`
+- تصاویر آپلودشده: `server/uploads/`
+
+برای دیتابیس‌ها نسخه پشتیبان زمان‌بندی‌شده و محافظت‌شده بگیرید. فایل‌های دیتابیس، تصاویر و اطلاعات محیطی را به مخزن عمومی یا پوشه `dist` منتقل نکنید.
